@@ -1,0 +1,45 @@
+name: Check tournaments
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # every 15 minutes (GitHub may delay runs a bit)
+  workflow_dispatch:          # lets you press "Run workflow" manually
+
+permissions:
+  contents: write             # needed so the bot can save its "already posted" list
+
+concurrency:
+  group: check-tournaments
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scraper
+        env:
+          DISCORD_WEBHOOK_1: ${{ secrets.DISCORD_WEBHOOK_1 }}
+          # For a second server, add e.g.:
+          # DISCORD_WEBHOOK_2: ${{ secrets.DISCORD_WEBHOOK_2 }}
+        run: python scraper.py
+
+      - name: Save state
+        if: always()
+        run: |
+          mkdir -p state
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state
+          if ! git diff --cached --quiet; then
+            git commit -m "Update processed tournaments"
+            git push
+          fi
