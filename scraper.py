@@ -49,10 +49,9 @@ def esc(text):
 
 
 def esc_link_name(text):
-    """Link text for player names: swap square brackets and protect
-    characters Discord would treat as formatting (e.g. _must_be_nice)."""
-    text = text.replace("[", "(").replace("]", ")")
-    return re.sub(r"([\\*_`~|])", r"\\\1", text)
+    """Player names as link text. Discord shows backslashes literally inside
+    link text, so we don't escape underscores; only swap square brackets."""
+    return text.replace("[", "(").replace("]", ")")
 
 
 def esc_link(text):
