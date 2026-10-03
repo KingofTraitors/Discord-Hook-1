@@ -1,0 +1,13 @@
+{
+  "servers": [
+    {
+      "name": "main",
+      "format": "standard",
+      "webhook_env": "DISCORD_WEBHOOK_1",
+      "post_challenges": true,
+      "post_metagame": true,
+      "metagame_days": 7,
+      "metagame_top": 15
+    }
+  ]
+}
