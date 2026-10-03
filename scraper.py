@@ -55,7 +55,10 @@ def esc_link(text):
 
 
 def send_discord(webhook, content):
-    content = content[:1990]
+    lines = content.split("\n")
+    while len("\n".join(lines)) > 1990 and len(lines) > 1:
+        lines.pop()  # drop whole trailing lines rather than cutting a link in half
+    content = "\n".join(lines)
     for _ in range(3):
         r = requests.post(
             webhook, json={"content": content, "flags": 4}, timeout=30
@@ -164,14 +167,16 @@ def parse_metagame(html):
     for tile in soup.find_all("div", class_="archetype-tile"):
         # Deck name = text of the last link that has text (the first link may be
         # a picture/key-card link). Rank is simply the order of the tiles.
-        texts = [
-            a.get_text(strip=True)
+        links = [
+            a
             for a in tile.find_all("a", href=re.compile(r"/archetype/"))
             if a.get_text(strip=True)
         ]
         m = PCT_COUNT.search(tile.get_text(" ", strip=True))
-        if texts and m:
-            entries.append((texts[-1], m.group(1) + "%", m.group(2)))
+        if links and m:
+            link = links[-1]
+            url = urljoin(BASE, link["href"].split("#")[0]) + "#paper"
+            entries.append((link.get_text(strip=True), m.group(1) + "%", m.group(2), url))
     if entries:
         return entries
 
@@ -199,7 +204,9 @@ def parse_metagame(html):
                 break
             node = node.parent
         if match and name:
-            entries.append((name, match.group(1) + "%", match.group(2)))
+            entries.append(
+                (name, match.group(1) + "%", match.group(2), urljoin(BASE, base) + "#paper")
+            )
     return entries
 
 
@@ -251,8 +258,8 @@ def fetch_metagame(session, fmt, days):
 def format_metagame(fmt_name, days, entries):
     today = datetime.date.today().isoformat()
     lines = [f"**{fmt_name} {days}-Day Metagame - {today}**", ""]
-    for i, (name, pct, count) in enumerate(entries, 1):
-        lines.append(f"{i}. {esc(name)} - {pct} ({count})")
+    for i, (name, pct, count, url) in enumerate(entries, 1):
+        lines.append(f"{i}. [{esc_link(name)}]({url}) - {pct} ({count})")
     return "\n".join(lines)
 
 
