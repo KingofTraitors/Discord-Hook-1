@@ -48,6 +48,13 @@ def esc(text):
     return re.sub(r"([\\*_`~|>\[\]()])", r"\\\1", text)
 
 
+def esc_link_name(text):
+    """Link text for player names: swap square brackets and protect
+    characters Discord would treat as formatting (e.g. _must_be_nice)."""
+    text = text.replace("[", "(").replace("]", ")")
+    return re.sub(r"([\\*_`~|])", r"\\\1", text)
+
+
 def esc_link(text):
     """Inside [link text](url) Discord shows backslashes literally, so only
     swap square brackets, which would break the link."""
@@ -131,6 +138,7 @@ def parse_tournament(session, url):
                 "deck": deck_a.get_text(strip=True),
                 "deck_url": urljoin(BASE, deck_a["href"]),
                 "pilot": player_a.get_text(strip=True),
+                "pilot_url": urljoin(BASE, player_a["href"]),
             }
         )
         if len(rows) == 8:
@@ -151,7 +159,8 @@ def format_top8(info, url):
     ]
     for r in info["top8"]:
         lines.append(
-            f"{r['place']}. [{esc_link(r['deck'])}]({r['deck_url']}) - {esc(r['pilot'])}"
+            f"{r['place']}. [{esc_link(r['deck'])}]({r['deck_url']}) - "
+            f"[{esc_link_name(r['pilot'])}]({r['pilot_url']})"
         )
     return "\n".join(lines)
 
