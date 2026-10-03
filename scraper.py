@@ -48,6 +48,12 @@ def esc(text):
     return re.sub(r"([\\*_`~|>\[\]()])", r"\\\1", text)
 
 
+def esc_link(text):
+    """Inside [link text](url) Discord shows backslashes literally, so only
+    swap square brackets, which would break the link."""
+    return text.replace("[", "(").replace("]", ")")
+
+
 def send_discord(webhook, content):
     content = content[:1990]
     for _ in range(3):
@@ -137,17 +143,39 @@ def parse_tournament(session, url):
 def format_top8(info, url):
     lines = [
         f"**{info['format']} Challenge Top 8 - {info['date']}**",
-        f"[{esc(info['title'])}]({url})",
+        f"[{esc_link(info['title'])}]({url})",
         "",
     ]
     for r in info["top8"]:
-        lines.append(f"{r['place']}. [{esc(r['deck'])}]({r['deck_url']}) - {esc(r['pilot'])}")
+        lines.append(
+            f"{r['place']}. [{esc_link(r['deck'])}]({r['deck_url']}) - {esc(r['pilot'])}"
+        )
     return "\n".join(lines)
 
 
 # ------------------------------------------------------------- metagame
 def parse_metagame(html):
+    # Goldfish wraps the tiles in <template>, whose text BeautifulSoup hides.
+    html = re.sub(r"</?template[^>]*>", "", html)
     soup = BeautifulSoup(html, "html.parser")
+
+    # Main method: each deck is a <div class="archetype-tile">.
+    entries = []
+    for tile in soup.find_all("div", class_="archetype-tile"):
+        # Deck name = text of the last link that has text (the first link may be
+        # a picture/key-card link). Rank is simply the order of the tiles.
+        texts = [
+            a.get_text(strip=True)
+            for a in tile.find_all("a", href=re.compile(r"/archetype/"))
+            if a.get_text(strip=True)
+        ]
+        m = PCT_COUNT.search(tile.get_text(" ", strip=True))
+        if texts and m:
+            entries.append((texts[-1], m.group(1) + "%", m.group(2)))
+    if entries:
+        return entries
+
+    # Fallback method (looser, used only if the tile layout changes).
     anchors = {}
     for a in soup.find_all("a", href=re.compile(r"/archetype/")):
         anchors.setdefault(a["href"].split("#")[0], []).append(a)
@@ -214,7 +242,9 @@ def fetch_metagame(session, fmt, days):
         entries = parse_metagame(html)
         if entries:
             return entries
-    print("DEBUG metagame response (first 600 chars):", r.text[:600])
+    tile = BeautifulSoup(r.text, "html.parser").find("div", class_="archetype-tile")
+    print("DEBUG first tile HTML:", str(tile)[:2500] if tile else "NO TILE FOUND")
+    print("DEBUG response length:", len(r.text))
     raise RuntimeError("Could not read metagame entries from Goldfish response")
 
 
@@ -252,7 +282,6 @@ def run_server(server):
         new_ids = new_ids[-1:]
     if not new_ids:
         print(f"[{name}] Nothing new.")
-        return
 
     posted_any = False
     for tid in new_ids:
@@ -278,12 +307,16 @@ def run_server(server):
         state["signatures"].append(sig)
         save_state(state_path, state)  # save right away so we never double-post
         time.sleep(1)
+    if posted_any and server.get("post_metagame", True):
+        state["pending_metagame"] = True  # stays set until the post succeeds
     save_state(state_path, state)
 
-    if posted_any and server.get("post_metagame", True):
+    if state.get("pending_metagame"):
         days = server.get("metagame_days", 7)
         entries = fetch_metagame(session, fmt, days)[: server.get("metagame_top", 15)]
         send_discord(webhook, format_metagame(fmt_name, days, entries))
+        state["pending_metagame"] = False
+        save_state(state_path, state)
         print(f"[{name}] Posted {days}-day metagame.")
 
 
