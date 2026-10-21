@@ -8,6 +8,15 @@
       "post_metagame": true,
       "metagame_days": 7,
       "metagame_top": 15
+    },
+    {
+      "name": "modern",
+      "format": "modern",
+      "webhook_env": "DISCORD_WEBHOOK_2",
+      "post_challenges": true,
+      "post_metagame": true,
+      "metagame_days": 7,
+      "metagame_top": 15
     }
   ]
 }
