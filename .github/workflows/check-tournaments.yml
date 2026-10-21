@@ -28,6 +28,7 @@ jobs:
       - name: Run scraper
         env:
           DISCORD_WEBHOOK_1: ${{ secrets.DISCORD_WEBHOOK_1 }}
+          DISCORD_WEBHOOK_2: ${{ secrets.DISCORD_WEBHOOK_2 }}
           # For a second server, add e.g.:
           # DISCORD_WEBHOOK_2: ${{ secrets.DISCORD_WEBHOOK_2 }}
         run: python scraper.py
