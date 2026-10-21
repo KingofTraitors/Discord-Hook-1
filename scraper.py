@@ -107,6 +107,12 @@ def find_challenges(session, fmt):
         found = {}
         for a in soup.find_all("a", href=TOURNAMENT_HREF):
             name = a.get_text(strip=True)
+            # On the search page every row has a Format column; ignore rows of
+            # other formats in case Goldfish doesn't apply our format filter.
+            row = a.find_parent("tr")
+            cells = row.find_all("td") if row else []
+            if len(cells) >= 3 and cells[2].get_text(strip=True).lower() != fmt.replace("_", " "):
+                continue
             if "challenge" in name.lower():
                 tid = int(TOURNAMENT_HREF.search(a["href"]).group(1))
                 found[tid] = (name, urljoin(BASE, a["href"].split("#")[0]))
