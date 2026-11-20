@@ -55,7 +55,9 @@
   68108,
   68113,
   68133,
-  68144
+  68144,
+  68161,
+  68162
  ],
  "signatures": [
   "2026-10-20|Univerce|L1X0|pizzangry|Arianne",
@@ -92,7 +94,8 @@
   "2026-11-15|Cake363|xfile|ShadowTitan1|SuperCow12653",
   "2026-11-16|oosunq|auzzie51|VitorCarvalho01|SuperCow12653",
   "2026-11-19|reidq7|Bradykiesling13|Dai66s|Denisevich",
-  "2026-11-19|McWinSauce|Danker|TrueHero|Denisevich"
+  "2026-11-19|McWinSauce|Danker|TrueHero|Denisevich",
+  "2026-11-20|duanceyao|parasisnotcool|frekinsmart|VampireDiaries"
  ],
  "pending_metagame": false
 }
